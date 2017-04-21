@@ -28,12 +28,14 @@ import okhttp3.HttpUrl;
 
 public class PersistentCookieJar implements ClearableCookieJar {
 
-    private CookieCache cache;
-    private CookiePersistor persistor;
+    private final CookieCache cache;
+    private final CookiePersistor persistor;
+    private final boolean ignorePersistance;
 
-    public PersistentCookieJar(CookieCache cache, CookiePersistor persistor) {
+    public PersistentCookieJar(CookieCache cache, CookiePersistor persistor, boolean ignorePersistance) {
         this.cache = cache;
         this.persistor = persistor;
+        this.ignorePersistance = ignorePersistance;
 
         this.cache.addAll(persistor.loadAll());
     }
@@ -41,12 +43,15 @@ public class PersistentCookieJar implements ClearableCookieJar {
     @Override
     synchronized public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
         cache.addAll(cookies);
-        persistor.saveAll(filterPersistentCookies(cookies));
+        persistor.saveAll(filterPersistentCookies(cookies, ignorePersistance));
     }
 
-    private static List<Cookie> filterPersistentCookies(List<Cookie> cookies) {
+    private static List<Cookie> filterPersistentCookies(List<Cookie> cookies, boolean ignorePersistance) {
         List<Cookie> persistentCookies = new ArrayList<>();
 
+        if (ignorePersistance) {
+          return cookies;
+        }
         for (Cookie cookie : cookies) {
             if (cookie.persistent()) {
                 persistentCookies.add(cookie);
