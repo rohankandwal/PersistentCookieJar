@@ -68,16 +68,16 @@ public class PersistentCookieJar implements ClearableCookieJar {
 
   /**
    * Function to get saved cookie
-   *
+   * @param scheme String containing scheme -  http, https, etc
    * @param url String containing url of the website for which cookie was saved
    * @param cookieName Name of the cookie you want from saved cookies
    * @return Cookie
    */
-  public String getCookie(final String url, final String cookieName) {
-    if (TextUtils.isEmpty(url) || TextUtils.isEmpty(cookieName)) {
+  public String getCookie(final String scheme, final String url, final String cookieName) {
+    if (TextUtils.isEmpty(scheme) || TextUtils.isEmpty(url) || TextUtils.isEmpty(cookieName)) {
       return null;
     }
-    HttpUrl httpUrl = new HttpUrl.Builder().host(url).build();
+    HttpUrl httpUrl = new HttpUrl.Builder().scheme(scheme).host(url).build();
     final List<Cookie> cookieList = loadForRequest(httpUrl);
     if (cookieList != null && cookieList.size() > 0) {
       for (final Cookie cookieInfo : cookieList) {
