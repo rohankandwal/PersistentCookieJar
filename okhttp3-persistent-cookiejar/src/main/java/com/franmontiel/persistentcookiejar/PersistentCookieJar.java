@@ -29,16 +29,38 @@ public class PersistentCookieJar implements ClearableCookieJar {
 
   private final CookieCache cache;
   private final CookiePersistor persistor;
-  private final boolean ignorePersistance;
+  private final boolean ignorePersistence;
 
+  /**
+   * Constructor accepting a {@link CookieCache}, {@link CookiePersistor} & whether we should
+   * override the Cookie's persistance setting
+   * @param cache
+   * @param persistor
+   * @param ignorePersistence boolean to override cookie's setting. True means override, false means
+   * accept cookie's setting
+   */
   public PersistentCookieJar(
-    CookieCache cache,
-    CookiePersistor persistor,
-    boolean ignorePersistance
+    CookieCache cache, CookiePersistor persistor, boolean ignorePersistence
   ) {
     this.cache = cache;
     this.persistor = persistor;
-    this.ignorePersistance = ignorePersistance;
+    this.ignorePersistence = ignorePersistence;
+
+    this.cache.addAll(persistor.loadAll());
+  }
+
+  /**
+   * Constructor accepting a {@link CookieCache}, {@link CookiePersistor}. Cookie's individual settings
+   * will be honoured.
+   * @param cache
+   * @param persistor
+   */
+  public PersistentCookieJar(
+    CookieCache cache, CookiePersistor persistor
+  ) {
+    this.cache = cache;
+    this.persistor = persistor;
+    this.ignorePersistence = false;
 
     this.cache.addAll(persistor.loadAll());
   }
@@ -46,20 +68,19 @@ public class PersistentCookieJar implements ClearableCookieJar {
   @Override
   synchronized public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
     cache.addAll(cookies);
-    persistor.saveAll(filterPersistentCookies(cookies, ignorePersistance));
+    persistor.saveAll(filterPersistentCookies(cookies, ignorePersistence));
   }
 
   private static List<Cookie> filterPersistentCookies(
-    List<Cookie> cookies,
-    boolean ignorePersistance
+    List<Cookie> cookies, boolean ignorePersistance
   ) {
     List<Cookie> persistentCookies = new ArrayList<>();
 
-    if (ignorePersistance) {
-      return cookies;
-    }
     for (Cookie cookie : cookies) {
-      if (cookie.persistent()) {
+      // If we want to override the cookie's persistence setting
+      if (ignorePersistance) {
+        persistentCookies.add(cookie);
+      } else if (cookie.persistent()) {
         persistentCookies.add(cookie);
       }
     }
@@ -68,6 +89,7 @@ public class PersistentCookieJar implements ClearableCookieJar {
 
   /**
    * Function to get saved cookie
+   *
    * @param scheme String containing scheme -  http, https, etc
    * @param url String containing url of the website for which cookie was saved
    * @param cookieName Name of the cookie you want from saved cookies
